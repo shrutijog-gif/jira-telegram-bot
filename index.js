@@ -249,9 +249,10 @@ function buildResolutionCardSvg(issue) {
 
         <!-- Footer Metadata: Reporter & Assignee -->
         <text x="420" y="${line2 ? 385 : 380}" text-anchor="middle" class="font-normal" font-size="16">
-            <tspan fill="#6ee7b7">👤 Reported by:</tspan>
-            <tspan fill="#ffffff" class="font-semibold"> ${reporter}   </tspan>
-            <tspan dx="24" fill="#6ee7b7">👨‍💻 Assigned to:</tspan>
+            <tspan fill="#6ee7b7" font-weight="600">Reported by:</tspan>
+            <tspan fill="#ffffff" class="font-semibold"> ${reporter}</tspan>
+            <tspan fill="#34d399" font-weight="bold" dx="18">•</tspan>
+            <tspan dx="18" fill="#6ee7b7" font-weight="600">Assigned to:</tspan>
             <tspan fill="#ffffff" class="font-semibold"> ${assignee}</tspan>
         </text>
     </svg>`;
