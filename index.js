@@ -101,8 +101,80 @@ function parseTaskInput(rawText, userName) {
     return { summary, description, displayTitle: firstLine };
 }
 
+// ============================================
+// 🔔 Chat ID Storage & Completion Notifier
+// ============================================
+const CHAT_ID_FILE = path.join(__dirname, 'chat_id.json');
+
+function getTargetChatId() {
+    if (process.env.TELEGRAM_CHAT_ID) return process.env.TELEGRAM_CHAT_ID;
+    try {
+        if (fs.existsSync(CHAT_ID_FILE)) {
+            const data = JSON.parse(fs.readFileSync(CHAT_ID_FILE, 'utf8'));
+            return data.chatId;
+        }
+    } catch (e) {}
+    return null;
+}
+
+function saveTargetChatId(chatId) {
+    if (!chatId) return;
+    try {
+        fs.writeFileSync(CHAT_ID_FILE, JSON.stringify({ chatId, updatedAt: new Date().toISOString() }), 'utf8');
+        console.log(`[Notifier] Updated target group Chat ID: ${chatId}`);
+    } catch (e) {
+        console.error("Failed to save chat_id.json:", e.message);
+    }
+}
+
+async function sendCompletionNotification(issue) {
+    const chatId = getTargetChatId();
+    if (!chatId) {
+        console.log('[Notifier] No target group Chat ID known yet. Send a message or /setgroup in your Telegram group.');
+        return false;
+    }
+
+    const titleClean = (issue.title || '').replace(/^[📲\s]+/, '').trim();
+    const reporter = issue.reporter || 'Unknown';
+    const assignee = issue.devAssignee || 'Unassigned';
+    const availability = issue.availability || 'Staging only';
+
+    const text = 
+        `🎉 <b>Task Resolved / Done!</b>\n\n` +
+        `🆔 <b>${issue.key}</b>\n` +
+        `📝 ${titleClean}\n` +
+        `👤 <b>Reported by:</b> ${reporter}\n` +
+        `👨‍💻 <b>Assigned to:</b> ${assignee}\n` +
+        `🚀 <b>Available on:</b> <b>${availability}</b>\n\n` +
+        `🔗 <a href="${issue.jiraUrl}">View in Jira</a>`;
+
+    try {
+        await bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true });
+        console.log(`[Notifier] Sent Done notification for ${issue.key} (Available on: ${availability}) to ${chatId}`);
+        return true;
+    } catch (err) {
+        console.error(`[Notifier] Failed to send Telegram notification for ${issue.key}:`, err.message);
+        return false;
+    }
+}
+
 bot.on('message', async (msg) => {
-    console.log("MSG received from:", msg.from?.first_name, "Chat ID:", msg.chat?.id);
+    console.log("MSG received from:", msg.from?.first_name, "Chat ID:", msg.chat?.id, "Type:", msg.chat?.type);
+
+    // Auto-memorize the group chat ID whenever any message is received in a group/supergroup
+    if (msg.chat && (msg.chat.type === 'group' || msg.chat.type === 'supergroup')) {
+        saveTargetChatId(msg.chat.id);
+    }
+
+    // Command to check or explicitly bind the notification group
+    if (msg.text && (msg.text.trim() === '/setgroup' || msg.text.trim() === '/notifications_here' || msg.text.trim() === '/id')) {
+        saveTargetChatId(msg.chat.id);
+        return bot.sendMessage(
+            msg.chat.id,
+            `🔔 <b>Task completion notifications enabled for this group!</b>\nChat ID: <code>${msg.chat.id}</code>`,
+            { parse_mode: 'HTML' }
+        );
+    }
 
     const userName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'User';
 
@@ -256,3 +328,10 @@ bot.on('message', async (msg) => {
         return;
     }
 });
+
+module.exports = {
+    bot,
+    getTargetChatId,
+    saveTargetChatId,
+    sendCompletionNotification
+};

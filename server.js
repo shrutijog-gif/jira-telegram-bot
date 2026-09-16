@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
@@ -175,65 +176,63 @@ function extractDeployment(fields, releaseFieldKeys) {
     return null;
 }
 
-// API: Fetch issues tagged with 'Telegram'
-app.get('/api/issues', async (req, res) => {
-    try {
-        const releaseFieldKeys = await getDeploymentFieldKeys();
-        const fieldList = [
-            'summary', 'status', 'assignee', 'reporter', 
-            'created', 'updated', 'priority', 'labels', 'components', 'fixVersions'
-        ];
-        if (Array.isArray(releaseFieldKeys)) {
-            releaseFieldKeys.forEach(k => {
-                if (!fieldList.includes(k)) fieldList.push(k);
-            });
+// Helper: Reusable Jira issue fetcher
+async function fetchJiraIssues() {
+    const releaseFieldKeys = await getDeploymentFieldKeys();
+    const fieldList = [
+        'summary', 'status', 'assignee', 'reporter', 
+        'created', 'updated', 'priority', 'labels', 'components', 'fixVersions'
+    ];
+    if (Array.isArray(releaseFieldKeys)) {
+        releaseFieldKeys.forEach(k => {
+            if (!fieldList.includes(k)) fieldList.push(k);
+        });
+    }
+
+    const projectKey = (process.env.JIRA_PROJECT_KEY || 'WD').replace(/['"]/g, '').trim() || 'WD';
+    const jql = `project = "${projectKey}" AND labels = "Telegram" ORDER BY updated DESC`;
+
+    let rawIssues = [];
+    let startAt = 0;
+    const pageSize = 100;
+    let total = Infinity;
+
+    // Paginate until all Jira issues matching JQL are retrieved
+    while (rawIssues.length < total) {
+        const jiraRes = await axios({
+            url: `https://${process.env.JIRA_DOMAIN}/rest/api/3/search/jql`,
+            method: 'GET',
+            params: {
+                jql: jql,
+                startAt: startAt,
+                maxResults: pageSize,
+                fields: fieldList.join(',')
+            },
+            auth: {
+                username: process.env.JIRA_EMAIL,
+                password: process.env.JIRA_API_TOKEN
+            },
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const data = jiraRes.data;
+        total = data.total || 0;
+        const batch = data.issues || [];
+        rawIssues.push(...batch);
+
+        if (batch.length === 0 || rawIssues.length >= total) {
+            break;
         }
+        startAt += batch.length;
+    }
 
-        const projectKey = (process.env.JIRA_PROJECT_KEY || 'WD').replace(/['"]/g, '').trim() || 'WD';
-        const jql = `project = "${projectKey}" AND labels = "Telegram" ORDER BY updated DESC`;
-        console.log(`[Jira Query JQL]: ${jql}`);
-
-        let rawIssues = [];
-        let startAt = 0;
-        const pageSize = 100;
-        let total = Infinity;
-
-        // Paginate until all Jira issues matching JQL are retrieved
-        while (rawIssues.length < total) {
-            const jiraRes = await axios({
-                url: `https://${process.env.JIRA_DOMAIN}/rest/api/3/search/jql`,
-                method: 'GET',
-                params: {
-                    jql: jql,
-                    startAt: startAt,
-                    maxResults: pageSize,
-                    fields: fieldList.join(',')
-                },
-                auth: {
-                    username: process.env.JIRA_EMAIL,
-                    password: process.env.JIRA_API_TOKEN
-                },
-                headers: { 'Accept': 'application/json' }
-            });
-
-            const data = jiraRes.data;
-            total = data.total || 0;
-            const batch = data.issues || [];
-            rawIssues.push(...batch);
-
-            if (batch.length === 0 || rawIssues.length >= total) {
-                break;
-            }
-            startAt += batch.length;
-        }
-
-        const issues = rawIssues
-            .filter(issue => {
-                const s = (issue.fields?.status?.name || '').toLowerCase();
-                return !s.includes('deleted') && !s.includes('invalid') && !s.includes('discard') && !s.includes('rejected');
-            })
-            .map(issue => {
-                const fields = issue.fields || {};
+    const issues = rawIssues
+        .filter(issue => {
+            const s = (issue.fields?.status?.name || '').toLowerCase();
+            return !s.includes('deleted') && !s.includes('invalid') && !s.includes('discard') && !s.includes('rejected');
+        })
+        .map(issue => {
+            const fields = issue.fields || {};
 
             // Extract reporter from summary e.g. "📲 <Title> (by Rahul)"
             let title = fields.summary || 'Untitled';
@@ -254,6 +253,15 @@ app.get('/api/issues', async (req, res) => {
                 devFirstName = fields.assignee.displayName.trim().split(/\s+/)[0];
             }
 
+            const deployment = extractDeployment(fields, releaseFieldKeys);
+            let availability = 'Staging only';
+            const depLower = (deployment || '').toLowerCase();
+            if (depLower.includes('production') || depLower === 'prod') {
+                availability = 'Production';
+            } else if (depLower.includes('preprod')) {
+                availability = 'Preprod';
+            }
+
             return {
                 key: issue.key,
                 title: title,
@@ -263,17 +271,21 @@ app.get('/api/issues', async (req, res) => {
                 column: mapStatusToColumn(statusName, categoryName),
                 devAssignee: devFirstName,
                 priority: fields.priority?.name || 'Medium',
-                deployment: extractDeployment(fields, releaseFieldKeys),
+                deployment: deployment,
+                availability: availability,
                 created: fields.created,
                 updated: fields.updated,
                 jiraUrl: `https://${process.env.JIRA_DOMAIN}/browse/${issue.key}`
             };
         });
 
-        const targetKeys = ['WD-1116', 'WD-1196', 'WD-1197', 'WD-1058'];
-        const sampleDebug = issues.filter(i => targetKeys.includes(i.key));
-        console.log('[DEBUG TARGET ISSUES DEPLOYMENT]:');
-        sampleDebug.forEach(i => console.log(`  ${i.key} -> dev: "${i.devAssignee}", status: "${i.status}", column: "${i.column}", deployment: "${i.deployment}"`));
+    return { total, issues, jql };
+}
+
+// API: Fetch issues tagged with 'Telegram'
+app.get('/api/issues', async (req, res) => {
+    try {
+        const { total, issues, jql } = await fetchJiraIssues();
 
         res.json({
             success: true,
@@ -304,15 +316,87 @@ app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ============================================
+// 🔔 Background Poller: Task Completion Notifier
+// ============================================
+const SEEN_DONE_FILE = path.join(__dirname, 'seen_done.json');
+let isInitialNotifierRun = true;
+
+function loadSeenDone() {
+    try {
+        if (fs.existsSync(SEEN_DONE_FILE)) {
+            const arr = JSON.parse(fs.readFileSync(SEEN_DONE_FILE, 'utf8'));
+            if (Array.isArray(arr)) return new Set(arr);
+        }
+    } catch (e) {}
+    return new Set();
+}
+
+function saveSeenDone(set) {
+    try {
+        fs.writeFileSync(SEEN_DONE_FILE, JSON.stringify(Array.from(set)), 'utf8');
+    } catch (e) {}
+}
+
+const seenDoneKeys = loadSeenDone();
+
+async function pollForCompletedTickets(botModule) {
+    if (!botModule || typeof botModule.sendCompletionNotification !== 'function') return;
+
+    try {
+        const { issues } = await fetchJiraIssues();
+        const doneIssues = issues.filter(i => i.column === 'done');
+
+        // On first run: seed current done tickets into memory/file so we don't spam past tickets
+        if (isInitialNotifierRun) {
+            isInitialNotifierRun = false;
+            let newlySeeded = 0;
+            doneIssues.forEach(i => {
+                const stateKey = `${i.key}_${i.availability}`;
+                if (!seenDoneKeys.has(stateKey)) {
+                    seenDoneKeys.add(stateKey);
+                    newlySeeded++;
+                }
+            });
+            saveSeenDone(seenDoneKeys);
+            console.log(`[Notifier] Initialized. Memorized ${doneIssues.length} existing Done tickets (${newlySeeded} new). Will only alert on new completions.`);
+            return;
+        }
+
+        // Subsequent runs: detect newly completed or newly promoted (e.g. Staging -> Production) tickets
+        for (const issue of doneIssues) {
+            const stateKey = `${issue.key}_${issue.availability}`;
+            if (!seenDoneKeys.has(stateKey)) {
+                seenDoneKeys.add(stateKey);
+                saveSeenDone(seenDoneKeys);
+
+                console.log(`[Notifier] Detected newly completed issue ${issue.key} (Available on: ${issue.availability})`);
+                await botModule.sendCompletionNotification(issue);
+            }
+        }
+    } catch (err) {
+        console.error('[Notifier] Error checking completed tickets:', err.message);
+    }
+}
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 
-    // Automatically launch Telegram bot alongside the web dashboard
+    // Automatically launch Telegram bot and completion notifier
     if (process.env.TELEGRAM_TOKEN && process.env.ENABLE_BOT !== 'false') {
         try {
-            require('./index.js');
+            const botModule = require('./index.js');
             console.log('🤖 Telegram bot listener initialized successfully');
+
+            // Initial seed of existing Done tickets
+            pollForCompletedTickets(botModule);
+
+            // Poll every 2 minutes for newly completed tickets
+            setInterval(() => {
+                pollForCompletedTickets(botModule);
+            }, 120000);
+
         } catch (e) {
             console.error('Failed to initialize Telegram bot:', e.message);
         }
