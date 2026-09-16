@@ -127,6 +127,136 @@ function saveTargetChatId(chatId) {
     }
 }
 
+let sharp;
+try {
+    sharp = require('sharp');
+} catch (e) {
+    console.warn('[Notifier] sharp package not loaded; will use text card fallback until installed.');
+}
+
+function escapeXml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function wrapText(text, maxChars = 38, maxLines = 2) {
+    const words = String(text || '').trim().split(/\s+/);
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+        if ((cur + ' ' + w).trim().length <= maxChars) {
+            cur = (cur + ' ' + w).trim();
+        } else {
+            if (cur) lines.push(cur);
+            cur = w;
+            if (lines.length === maxLines - 1) break;
+        }
+    }
+    if (cur && lines.length < maxLines) lines.push(cur);
+    if (words.length > 0 && lines.join(' ').length < text.length && lines.length > 0) {
+        lines[lines.length - 1] = lines[lines.length - 1].replace(/\.{0,3}$/, '') + '...';
+    }
+    return lines;
+}
+
+function buildResolutionCardSvg(issue) {
+    const key = escapeXml(issue.key || 'TASK');
+    const titleClean = (issue.title || '').replace(/^[📲\s]+/, '').trim();
+    const titleLines = wrapText(titleClean, 40, 2);
+    const line1 = escapeXml(titleLines[0] || 'Task Completed');
+    const line2 = escapeXml(titleLines[1] || '');
+    const availability = escapeXml(issue.availability || 'Staging only');
+    const reporter = escapeXml(issue.reporter || 'Unknown');
+    const assignee = escapeXml(issue.devAssignee || 'Unassigned');
+
+    const width = 840;
+    const height = 480;
+
+    return `
+    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#065f46" stop-opacity="0.95" />
+                <stop offset="50%" stop-color="#047857" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#022c22" stop-opacity="0.98" />
+            </linearGradient>
+
+            <linearGradient id="pillGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(16, 185, 129, 0.25)" />
+                <stop offset="100%" stop-color="rgba(5, 150, 105, 0.35)" />
+            </linearGradient>
+
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="8" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+
+            <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.5" />
+            </filter>
+        </defs>
+
+        <style>
+            .font-bold { font-family: 'Segoe UI', -apple-system, Roboto, Helvetica, sans-serif; font-weight: 800; }
+            .font-semibold { font-family: 'Segoe UI', -apple-system, Roboto, Helvetica, sans-serif; font-weight: 600; }
+            .font-normal { font-family: 'Segoe UI', -apple-system, Roboto, Helvetica, sans-serif; font-weight: 400; }
+        </style>
+
+        <!-- Outer Dark Surface -->
+        <rect width="${width}" height="${height}" fill="#0b0f14" />
+
+        <!-- Main Card with Rounded Corners & Subtle Glow -->
+        <rect x="24" y="24" width="792" height="432" rx="28" fill="url(#cardGrad)" stroke="#10b981" stroke-width="1.8" stroke-opacity="0.4" filter="url(#softShadow)" />
+
+        <!-- Top Left: Glowing Dot + Ticket Key -->
+        <circle cx="68" cy="74" r="9" fill="#10b981" filter="url(#glow)" />
+        <circle cx="68" cy="74" r="5" fill="#a7f3d0" />
+        <text x="88" y="82" class="font-bold" font-size="28" fill="#ffffff" letter-spacing="0.5">${key}</text>
+
+        <!-- Top Right: Clean Circular Badge with White Checkmark (No Shield) -->
+        <circle cx="756" cy="74" r="26" fill="#10b981" filter="url(#glow)" />
+        <circle cx="756" cy="74" r="23" fill="#059669" />
+        <path d="M746 74 L753 81 L768 66" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+        <!-- Center Header: TASK RESOLVED -->
+        <text x="420" y="162" text-anchor="middle" class="font-bold" font-size="34" fill="#ffffff" letter-spacing="2.5">TASK RESOLVED</text>
+
+        <!-- Task Title Line 1 & Line 2 -->
+        <text x="420" y="206" text-anchor="middle" class="font-normal" font-size="21" fill="#f1f5f9">${line1}</text>
+        ${line2 ? `<text x="420" y="235" text-anchor="middle" class="font-normal" font-size="18" fill="#cbd5e1">${line2}</text>` : ''}
+
+        <!-- Deployment Pill Badge (Centered) -->
+        <g transform="translate(250, ${line2 ? 265 : 252})">
+            <rect width="340" height="44" rx="22" fill="url(#pillGrad)" stroke="#34d399" stroke-width="1.6" />
+            <circle cx="28" cy="22" r="6" fill="#34d399" filter="url(#glow)" />
+            <text x="44" y="28" class="font-semibold" font-size="16" fill="#a7f3d0">Available on:</text>
+            <text x="160" y="28" class="font-bold" font-size="17" fill="#ffffff">${availability}</text>
+        </g>
+
+        <!-- Divider Line -->
+        <line x1="120" y1="${line2 ? 342 : 335}" x2="720" y2="${line2 ? 342 : 335}" stroke="#10b981" stroke-opacity="0.25" stroke-width="1" />
+
+        <!-- Footer Metadata: Reporter & Assignee -->
+        <text x="420" y="${line2 ? 385 : 380}" text-anchor="middle" class="font-normal" font-size="16">
+            <tspan fill="#6ee7b7">👤 Reported by:</tspan>
+            <tspan fill="#ffffff" class="font-semibold"> ${reporter}   </tspan>
+            <tspan dx="24" fill="#6ee7b7">👨‍💻 Assigned to:</tspan>
+            <tspan fill="#ffffff" class="font-semibold"> ${assignee}</tspan>
+        </text>
+    </svg>`;
+}
+
 async function sendCompletionNotification(issue) {
     const chatId = getTargetChatId();
     if (!chatId) {
@@ -134,23 +264,65 @@ async function sendCompletionNotification(issue) {
         return false;
     }
 
-    const titleClean = (issue.title || '').replace(/^[📲\s]+/, '').trim();
-    const reporter = issue.reporter || 'Unknown';
-    const assignee = issue.devAssignee || 'Unassigned';
-    const availability = issue.availability || 'Staging only';
+    const titleClean = escapeHtml((issue.title || '').replace(/^[📲\s]+/, '').trim());
+    const reporter = escapeHtml(issue.reporter || 'Unknown');
+    const assignee = escapeHtml(issue.devAssignee || 'Unassigned');
+    const availability = escapeHtml(issue.availability || 'Staging only');
 
-    const text = 
-        `🎉 <b>Task Resolved / Done!</b>\n\n` +
-        `🆔 <b>${issue.key}</b>\n` +
-        `📝 ${titleClean}\n` +
+    // Inline button linking directly to the Jira ticket
+    const inlineKeyboard = {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    {
+                        text: '🟢 Open in Jira ↗',
+                        url: issue.jiraUrl
+                    }
+                ]
+            ]
+        }
+    };
+
+    // Try generating and sending the visual green resolution card
+    if (sharp) {
+        try {
+            const svgStr = buildResolutionCardSvg(issue);
+            const pngBuffer = await sharp(Buffer.from(svgStr)).png().toBuffer();
+
+            const caption = 
+                `✅ <b>${escapeHtml(issue.key)} Resolved!</b>\n` +
+                `🚀 <b>Available on:</b> <b>${availability}</b>`;
+
+            await bot.sendPhoto(chatId, pngBuffer, {
+                caption: caption,
+                parse_mode: 'HTML',
+                ...inlineKeyboard
+            });
+
+            console.log(`[Notifier] Sent Visual Green Card for ${issue.key} to ${chatId}`);
+            return true;
+        } catch (imgErr) {
+            console.error('[Notifier] Failed to generate/send green card image, falling back to text:', imgErr.message);
+        }
+    }
+
+    // High-contrast fallback text card with native blockquote and button
+    const fallbackText = 
+        `✅ <b>TASK RESOLVED / DONE!</b>\n\n` +
+        `<blockquote>` +
+        `🟢 <b>${escapeHtml(issue.key)}</b> — <b>${titleClean}</b>\n\n` +
         `👤 <b>Reported by:</b> ${reporter}\n` +
         `👨‍💻 <b>Assigned to:</b> ${assignee}\n` +
-        `🚀 <b>Available on:</b> <b>${availability}</b>\n\n` +
-        `🔗 <a href="${issue.jiraUrl}">View in Jira</a>`;
+        `🚀 <b>Available on:</b> <b>${availability}</b>` +
+        `</blockquote>`;
 
     try {
-        await bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true });
-        console.log(`[Notifier] Sent Done notification for ${issue.key} (Available on: ${availability}) to ${chatId}`);
+        await bot.sendMessage(chatId, fallbackText, {
+            parse_mode: 'HTML',
+            disable_web_page_preview: true,
+            ...inlineKeyboard
+        });
+        console.log(`[Notifier] Sent Done notification for ${issue.key} (Available on: ${issue.availability}) to ${chatId}`);
         return true;
     } catch (err) {
         console.error(`[Notifier] Failed to send Telegram notification for ${issue.key}:`, err.message);

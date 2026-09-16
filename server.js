@@ -307,6 +307,28 @@ app.get('/api/issues', async (req, res) => {
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Dedicated route to manually test or re-trigger Telegram completion notification
+app.get('/api/trigger-notify/:key', async (req, res) => {
+    try {
+        const { issues } = await fetchJiraIssues();
+        const issue = issues.find(i => i.key.toUpperCase() === req.params.key.toUpperCase());
+        if (!issue) {
+            return res.status(404).json({ success: false, error: `Issue ${req.params.key} not found` });
+        }
+        const botModule = require('./index.js');
+        const sent = await botModule.sendCompletionNotification(issue);
+        res.json({
+            success: true,
+            issue: issue.key,
+            notificationSent: sent,
+            availability: issue.availability,
+            status: issue.status
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Dedicated route for Kanban Board View
 app.get('/board', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'board.html'));
@@ -347,20 +369,27 @@ async function pollForCompletedTickets(botModule) {
         const { issues } = await fetchJiraIssues();
         const doneIssues = issues.filter(i => i.column === 'done');
 
-        // On first run: seed current done tickets into memory/file so we don't spam past tickets
+        // On first run: seed historical tickets (updated > 45 mins ago) into memory
+        // so we don't spam older tickets, BUT let freshly completed tickets (within last 45 mins) alert!
         if (isInitialNotifierRun) {
             isInitialNotifierRun = false;
             let newlySeeded = 0;
+            const cutoffTime = Date.now() - (45 * 60 * 1000); // 45 mins ago
+
             doneIssues.forEach(i => {
                 const stateKey = `${i.key}_${i.availability}`;
-                if (!seenDoneKeys.has(stateKey)) {
-                    seenDoneKeys.add(stateKey);
-                    newlySeeded++;
+                const updatedTime = i.updated ? new Date(i.updated).getTime() : 0;
+                
+                // Only seed if it was updated before the cutoff time
+                if (updatedTime < cutoffTime) {
+                    if (!seenDoneKeys.has(stateKey)) {
+                        seenDoneKeys.add(stateKey);
+                        newlySeeded++;
+                    }
                 }
             });
             saveSeenDone(seenDoneKeys);
-            console.log(`[Notifier] Initialized. Memorized ${doneIssues.length} existing Done tickets (${newlySeeded} new). Will only alert on new completions.`);
-            return;
+            console.log(`[Notifier] Initialized. Memorized ${newlySeeded} historical Done tickets. Checking for recent completions...`);
         }
 
         // Subsequent runs: detect newly completed or newly promoted (e.g. Staging -> Production) tickets
