@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "bot": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,6 +16,8 @@
     "axios": "^1.16.0",
     "dotenv": "^17.4.2",
     "form-data": "^4.0.5",
-    "node-telegram-bot-api": "^0.67.0"
+    "node-telegram-bot-api": "^0.67.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0"
   }
 }
