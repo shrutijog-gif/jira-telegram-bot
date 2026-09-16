@@ -229,15 +229,15 @@ function buildResolutionCardSvg(issue) {
         <circle cx="756" cy="74" r="23" fill="#059669" />
         <path d="M746 74 L753 81 L768 66" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
 
-        <!-- Center Header: TASK RESOLVED -->
-        <text x="420" y="162" text-anchor="middle" class="font-bold" font-size="34" fill="#ffffff" letter-spacing="2.5">TASK RESOLVED</text>
+        <!-- Center Accent Sub-Header: TASK RESOLVED (Smaller, sleek uppercase label) -->
+        <text x="420" y="148" text-anchor="middle" class="font-semibold" font-size="15" fill="#34d399" letter-spacing="3.5">● TASK RESOLVED ●</text>
 
-        <!-- Task Title Line 1 & Line 2 -->
-        <text x="420" y="206" text-anchor="middle" class="font-normal" font-size="21" fill="#f1f5f9">${line1}</text>
-        ${line2 ? `<text x="420" y="235" text-anchor="middle" class="font-normal" font-size="18" fill="#cbd5e1">${line2}</text>` : ''}
+        <!-- Actual Task Title: Big Hero Typography -->
+        <text x="420" y="196" text-anchor="middle" class="font-bold" font-size="28" fill="#ffffff">${line1}</text>
+        ${line2 ? `<text x="420" y="232" text-anchor="middle" class="font-bold" font-size="23" fill="#f1f5f9">${line2}</text>` : ''}
 
         <!-- Deployment Pill Badge (Centered) -->
-        <g transform="translate(250, ${line2 ? 265 : 252})">
+        <g transform="translate(250, ${line2 ? 268 : 252})">
             <rect width="340" height="44" rx="22" fill="url(#pillGrad)" stroke="#34d399" stroke-width="1.6" />
             <circle cx="28" cy="22" r="6" fill="#34d399" filter="url(#glow)" />
             <text x="44" y="28" class="font-semibold" font-size="16" fill="#a7f3d0">Available on:</text>
@@ -258,6 +258,68 @@ function buildResolutionCardSvg(issue) {
     </svg>`;
 }
 
+// ============================================
+// 👥 Auto-learn & Store Telegram User Handles
+// ============================================
+const USER_HANDLES_FILE = path.join(__dirname, 'user_handles.json');
+
+function loadUserHandles() {
+    try {
+        if (fs.existsSync(USER_HANDLES_FILE)) {
+            return JSON.parse(fs.readFileSync(USER_HANDLES_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    return {};
+}
+
+function saveUserHandles(map) {
+    try {
+        fs.writeFileSync(USER_HANDLES_FILE, JSON.stringify(map, null, 2), 'utf8');
+    } catch (e) {}
+}
+
+const userHandles = loadUserHandles();
+
+function recordUserHandle(user) {
+    if (!user) return;
+    const first = (user.first_name || '').trim().toLowerCase();
+    const last = (user.last_name || '').trim().toLowerCase();
+    const full = `${first} ${last}`.trim();
+    const handle = user.username ? `@${user.username}` : (user.id ? `tg://${user.id}` : null);
+    if (!handle) return;
+
+    let changed = false;
+    if (full && userHandles[full] !== handle) {
+        userHandles[full] = handle;
+        changed = true;
+    }
+    if (first && userHandles[first] !== handle) {
+        userHandles[first] = handle;
+        changed = true;
+    }
+    if (changed) saveUserHandles(userHandles);
+}
+
+function getReporterMention(reporterName) {
+    if (!reporterName || reporterName === 'Unknown' || reporterName === 'Telegram') {
+        return '';
+    }
+    const clean = reporterName.trim();
+    const lower = clean.toLowerCase();
+    const firstLower = lower.split(/\s+/)[0];
+
+    const target = userHandles[lower] || userHandles[firstLower];
+    if (target) {
+        if (target.startsWith('@')) return target;
+        if (target.startsWith('tg://')) {
+            const uid = target.replace('tg://', '');
+            return `<a href="tg://user?id=${uid}">${escapeHtml(clean)}</a>`;
+        }
+    }
+    // Fallback: tag with first name handle or formatted name
+    return `@${escapeHtml(firstLower)}`;
+}
+
 async function sendCompletionNotification(issue) {
     const chatId = getTargetChatId();
     if (!chatId) {
@@ -269,6 +331,9 @@ async function sendCompletionNotification(issue) {
     const reporter = escapeHtml(issue.reporter || 'Unknown');
     const assignee = escapeHtml(issue.devAssignee || 'Unassigned');
     const availability = escapeHtml(issue.availability || 'Staging only');
+
+    const reporterMention = getReporterMention(issue.reporter);
+    const mentionTag = reporterMention ? `\n👤 <b>cc:</b> ${reporterMention}` : '';
 
     // Inline button linking directly to the Jira ticket
     const inlineKeyboard = {
@@ -291,8 +356,9 @@ async function sendCompletionNotification(issue) {
             const pngBuffer = await sharp(Buffer.from(svgStr)).png().toBuffer();
 
             const caption = 
-                `✅ <b>${escapeHtml(issue.key)} Resolved!</b>\n` +
-                `🚀 <b>Available on:</b> <b>${availability}</b>`;
+                `✅ <b>${escapeHtml(issue.key)}: ${titleClean}</b>\n` +
+                `🚀 <b>Available on:</b> <b>${availability}</b>` +
+                mentionTag;
 
             await bot.sendPhoto(chatId, pngBuffer, {
                 caption: caption,
@@ -311,8 +377,8 @@ async function sendCompletionNotification(issue) {
     const fallbackText = 
         `✅ <b>TASK RESOLVED / DONE!</b>\n\n` +
         `<blockquote>` +
-        `🟢 <b>${escapeHtml(issue.key)}</b> — <b>${titleClean}</b>\n\n` +
-        `👤 <b>Reported by:</b> ${reporter}\n` +
+        `🟢 <b>${escapeHtml(issue.key)}</b>: <b>${titleClean}</b>\n\n` +
+        `👤 <b>Reported by:</b> ${reporterMention || reporter}\n` +
         `👨‍💻 <b>Assigned to:</b> ${assignee}\n` +
         `🚀 <b>Available on:</b> <b>${availability}</b>` +
         `</blockquote>`;
@@ -334,6 +400,11 @@ async function sendCompletionNotification(issue) {
 bot.on('message', async (msg) => {
     console.log("MSG received from:", msg.from?.first_name, "Chat ID:", msg.chat?.id, "Type:", msg.chat?.type);
 
+    // Auto-record sender details so we can mention them when their tickets resolve
+    if (msg.from) {
+        recordUserHandle(msg.from);
+    }
+
     // Auto-memorize the group chat ID whenever any message is received in a group/supergroup
     if (msg.chat && (msg.chat.type === 'group' || msg.chat.type === 'supergroup')) {
         saveTargetChatId(msg.chat.id);
@@ -347,6 +418,30 @@ bot.on('message', async (msg) => {
             `🔔 <b>Task completion notifications enabled for this group!</b>\nChat ID: <code>${msg.chat.id}</code>`,
             { parse_mode: 'HTML' }
         );
+    }
+
+    // Command to register or check Telegram handle for task resolution mentions
+    if (msg.text && msg.text.startsWith('/iam')) {
+        const parts = msg.text.trim().split(/\s+/);
+        const senderName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || msg.from?.first_name || 'User';
+        let handle = parts[1] || (msg.from?.username ? `@${msg.from.username}` : null);
+        if (handle) {
+            handle = handle.startsWith('@') ? handle : `@${handle}`;
+            userHandles[senderName.toLowerCase()] = handle;
+            if (msg.from?.first_name) userHandles[msg.from.first_name.toLowerCase()] = handle;
+            saveUserHandles(userHandles);
+            return bot.sendMessage(
+                msg.chat.id,
+                `✅ Linked <b>${senderName}</b> to <b>${handle}</b>!\nYou will be mentioned when your reported tasks are resolved.`,
+                { parse_mode: 'HTML' }
+            );
+        } else {
+            return bot.sendMessage(
+                msg.chat.id,
+                `💡 Usage: <code>/iam @your_username</code> to link your Telegram username for completion alerts.`,
+                { parse_mode: 'HTML' }
+            );
+        }
     }
 
     const userName = `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'User';
