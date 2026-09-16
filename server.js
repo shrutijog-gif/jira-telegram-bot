@@ -189,7 +189,9 @@ app.get('/api/issues', async (req, res) => {
             });
         }
 
-        const jql = `project = "${process.env.JIRA_PROJECT_KEY}" AND labels = "Telegram" ORDER BY updated DESC`;
+        const projectKey = (process.env.JIRA_PROJECT_KEY || 'WD').replace(/['"]/g, '').trim() || 'WD';
+        const jql = `project = "${projectKey}" AND labels = "Telegram" ORDER BY updated DESC`;
+        console.log(`[Jira Query JQL]: ${jql}`);
 
         let rawIssues = [];
         let startAt = 0;
@@ -277,6 +279,7 @@ app.get('/api/issues', async (req, res) => {
             success: true,
             totalInJira: total,
             count: issues.length,
+            jqlUsed: jql,
             issues: issues
         });
 
