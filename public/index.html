@@ -336,27 +336,26 @@
       align-items: center;
     }
 
-    .assignee-badge {
+    .meta-text, .reporter-text {
+      color: #334155;
+      font-weight: 500;
+      font-size: 0.75rem;
+    }
+    .meta-label, .reporter-label {
+      color: #64748b;
+      font-weight: 400;
+    }
+    .unassigned-badge {
+      background: #fff1f2;
+      color: #e11d48;
+      border: 1px solid #ffe4e6;
       font-weight: 600;
-      padding: 3px 8px;
+      font-size: 0.725rem;
+      padding: 2px 7px;
       border-radius: 6px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-    }
-    .assigned-dev {
-      background: #eff6ff;
-      color: #1d4ed8;
-      border: 1px solid #dbeafe;
-    }
-    .unassigned-dev {
-      background: #fff1f2;
-      color: #e11d48;
-      border: 1px solid #ffe4e6;
-    }
-    .reporter-text {
-      color: #475569;
-      font-weight: 500;
     }
     .time-text {
       color: #94a3b8;
@@ -592,9 +591,10 @@
 
       container.innerHTML = issues.map(issue => {
         const isUnassigned = !issue.devAssignee || issue.devAssignee === 'Unassigned';
-        const devBadgeClass = isUnassigned ? 'unassigned-dev' : 'assigned-dev';
         const devFirstName = isUnassigned ? 'Unassigned' : issue.devAssignee.trim().split(/\s+/)[0];
-        const devBadgeText = isUnassigned ? '⚠️ Unassigned' : `👨‍💻 ${escapeHtml(devFirstName)}`;
+        const assigneeHtml = isUnassigned
+          ? `<span class="unassigned-badge">⚠️ Unassigned</span>`
+          : `<span class="meta-text"><span class="meta-label">Assigned to:</span> ${escapeHtml(devFirstName)}</span>`;
 
         const deployment = issue.deployment || (issue.column === 'done' ? 'Not Released' : null);
         let deployBadgeHtml = '';
@@ -617,12 +617,11 @@
             ${deployBadgeHtml}
             <div class="card-footer">
               <div class="footer-row">
-                <span class="assignee-badge ${devBadgeClass}">${devBadgeText}</span>
+                ${assigneeHtml}
                 <span class="time-text">${timeAgo(issue.updated)}</span>
               </div>
               <div class="footer-row">
-                <span class="reporter-text">👤 ${escapeHtml(issue.reporter)}</span>
-                <span class="time-text" style="color:#64748b;">${escapeHtml(issue.priority)}</span>
+                <span class="reporter-text"><span class="reporter-label">Reported by:</span> ${escapeHtml(issue.reporter)}</span>
               </div>
             </div>
           </div>
