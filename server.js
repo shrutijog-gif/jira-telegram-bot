@@ -304,4 +304,14 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
+
+    // Automatically launch Telegram bot alongside the web dashboard
+    if (process.env.TELEGRAM_TOKEN && process.env.ENABLE_BOT !== 'false') {
+        try {
+            require('./index.js');
+            console.log('🤖 Telegram bot listener initialized successfully');
+        } catch (e) {
+            console.error('Failed to initialize Telegram bot:', e.message);
+        }
+    }
 });
