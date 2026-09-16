@@ -9,9 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-page: #f8fafc;
+      --bg-page: #ffffff;
       --bg-surface: #ffffff;
-      --bg-column: #f1f5f9;
+      --bg-column: #f8fafc;
       --bg-card: #ffffff;
       --bg-card-hover: #ffffff;
       
@@ -59,12 +59,12 @@
       gap: 12px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      padding: 16px 20px;
+      padding: 10px 18px;
       border-radius: 12px;
       box-shadow: var(--shadow-sm);
     }
     .brand-title {
-      font-size: 1.35rem;
+      font-size: 1.25rem;
       font-weight: 700;
       color: #0f172a;
       display: flex;
@@ -143,36 +143,7 @@
     }
     .filter-select:focus { border-color: #2563eb; }
 
-    /* Header Stats Pills */
-    .stats-pills {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .stat-pill {
-      background: #f8fafc;
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 6px 12px;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 0.8rem;
-    }
-    .stat-pill .pill-label {
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .stat-pill .pill-num {
-      font-weight: 700;
-      color: #0f172a;
-      font-size: 0.875rem;
-    }
-    .stat-pill-backlog { border-left: 3px solid var(--color-backlog); }
-    .stat-pill-progress { border-left: 3px solid var(--color-progress); }
-    .stat-pill-testing { border-left: 3px solid var(--color-testing); }
-    .stat-pill-done { border-left: 3px solid var(--color-done); }
+    /* Filter Controls */
 
     /* Board Columns Grid */
     .board-grid {
@@ -316,6 +287,11 @@
       color: #6d28d9;
       border: 1px solid #ddd6fe;
     }
+    .deploy-staging-only {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
     .deploy-not-released {
       background: #f0f9ff;
       color: #0284c7;
@@ -368,6 +344,486 @@
       color: #94a3b8;
       font-size: 0.825rem;
     }
+
+    /* View Toggle */
+    .view-toggle {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      gap: 3px;
+      margin-left: auto;
+    }
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      padding: 7px 14px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: #64748b;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .toggle-btn:hover {
+      color: #0f172a;
+    }
+    .toggle-btn.active {
+      background: #ffffff;
+      color: #2563eb;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* List View */
+    .list-view-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .list-rows-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 2px 4px;
+    }
+    .list-chips-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .filter-chip {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      color: #64748b;
+      padding: 5px 12px;
+      border-radius: 99px;
+      font-size: 0.775rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+    .filter-chip:hover {
+      border-color: #93c5fd;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+    .filter-chip.active {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.15);
+    }
+    .list-rows-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .scope-info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 0.65rem;
+      font-weight: 700;
+      cursor: help;
+      border: 1px solid #cbd5e1;
+      transition: all 0.15s ease;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .scope-info-icon:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    /* Single Row Card with Left Color Representation Column */
+    .issue-row-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      display: flex;
+      align-items: stretch;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      overflow: hidden;
+      min-height: 80px;
+    }
+    .issue-row-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+      transform: translateY(-2px);
+    }
+    .issue-row-card:hover .btn-copy-key {
+      opacity: 1;
+    }
+
+    /* Left Status Representation Column */
+    .row-status-col {
+      width: 125px;
+      min-width: 125px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 10px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .status-col-done {
+      background: #ecfdf5;
+      border-right: 1px solid #a7f3d0;
+      color: #047857;
+    }
+    .status-col-dev_done {
+      background: #f5f3ff;
+      border-right: 1px solid #ddd6fe;
+      color: #7c3aed;
+    }
+    .status-col-testing {
+      background: #fffbeb;
+      border-right: 1px solid #fde68a;
+      color: #b45309;
+    }
+    .status-col-in_progress {
+      background: #eff6ff;
+      border-right: 1px solid #bae6fd;
+      color: #0284c7;
+    }
+    .status-col-backlog {
+      background: #f8fafc;
+      border-right: 1px solid #e2e8f0;
+      color: #475569;
+    }
+    .row-jira-key {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: inherit;
+      text-decoration: none;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 4px 8px;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: background 0.12s ease;
+    }
+    .row-jira-key:hover {
+      text-decoration: underline;
+      background: #f8fafc;
+    }
+    .row-status-text {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      opacity: 0.9;
+    }
+
+    /* Right Body Column */
+    .row-body-col {
+      flex: 1;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+      background: #ffffff;
+      justify-content: center;
+    }
+
+    /* Top Row - Vertically Aligned Grid */
+    .row-top-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 1.8fr) 190px 180px 120px;
+      gap: 16px;
+      align-items: center;
+    }
+    .col-title {
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .col-meta-box {
+      font-size: 0.775rem;
+      color: #334155;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .col-meta-box strong {
+      color: #0f172a;
+    }
+    .col-status-box {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Bottom Sub Row */
+    .row-bottom-grid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 8px;
+      border-top: 1px solid #f8fafc;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      flex-wrap: wrap;
+    }
+    .sub-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .sub-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+    .sub-times {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-copy-key {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      font-size: 0.725rem;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-copy-key:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      opacity: 1;
+    }
+
+    @media (max-width: 1100px) {
+      .row-top-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .col-status-box {
+        justify-content: flex-start;
+      }
+    }
+    @media (max-width: 700px) {
+      .issue-row-card {
+        flex-direction: column;
+      }
+      .row-status-col {
+        width: 100%;
+        min-width: 100%;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+    }
+    .row-key-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-copy-key {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      font-size: 0.7rem;
+      padding: 3px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .btn-copy-key:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .row-title {
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .row-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.775rem;
+    }
+    .meta-separator {
+      color: #cbd5e1;
+    }
+    .meta-tag {
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+      padding: 2px 7px;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .row-status-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Status Pill with live dots */
+    .status-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 99px;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-backlog {
+      background: #f8fafc;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .status-in_progress {
+      background: #eff6ff;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+    .status-testing {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .status-done {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    .status-dev_done {
+      background: #f5f3ff;
+      color: #7c3aed;
+      border: 1px solid #ddd6fe;
+    }
+
+    /* Status Dots & Pulse */
+    .dot-dev_done {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #7c3aed;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-cyan {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4); }
+      50% { opacity: 0.85; transform: scale(1.05); box-shadow: 0 0 0 4px rgba(2, 132, 199, 0); }
+    }
+    .dot-in_progress {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #0284c7;
+      animation: pulse-cyan 1.8s infinite;
+      flex-shrink: 0;
+    }
+    .dot-backlog {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #94a3b8;
+      flex-shrink: 0;
+    }
+    .dot-testing {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #d97706;
+      flex-shrink: 0;
+    }
+    .dot-done {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      flex-shrink: 0;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      font-weight: 500;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 950px) {
+      .issue-row-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .row-status-group {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+    }
   </style>
 </head>
 <body>
@@ -379,30 +835,6 @@
         <span class="live-tag">● Live</span>
       </div>
 
-      <!-- Quick Stats in Title Row -->
-      <div class="stats-pills">
-        <div class="stat-pill">
-          <span class="pill-label">Total</span>
-          <span class="pill-num" id="statAll">0</span>
-        </div>
-        <div class="stat-pill stat-pill-backlog">
-          <span class="pill-label">📥 Backlog</span>
-          <span class="pill-num" id="statBacklog">0</span>
-        </div>
-        <div class="stat-pill stat-pill-progress">
-          <span class="pill-label">⚡ In Progress</span>
-          <span class="pill-num" id="statProgress">0</span>
-        </div>
-        <div class="stat-pill stat-pill-testing">
-          <span class="pill-label">🧪 In Testing</span>
-          <span class="pill-num" id="statTesting">0</span>
-        </div>
-        <div class="stat-pill stat-pill-done">
-          <span class="pill-label">✅ Done</span>
-          <span class="pill-num" id="statDone">0</span>
-        </div>
-      </div>
-
       <div class="top-actions">
         <span id="syncTime" style="font-size:0.8rem; color:var(--text-dim);">Syncing...</span>
         <button id="refreshBtn" class="btn-refresh" onclick="loadIssues()">🔄 Refresh</button>
@@ -411,55 +843,39 @@
 
     <!-- Controls -->
     <div class="filters-bar">
-      <input type="text" id="searchInput" class="search-input" placeholder="Search by title, ID (e.g. WD-1384), or name..." oninput="renderBoard()">
-      <select id="reporterFilter" class="filter-select" onchange="renderBoard()">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search by title, ID (e.g. WD-1384), or name..." oninput="renderViews()">
+      <select id="reporterFilter" class="filter-select" onchange="renderViews()">
         <option value="all">All Reporters</option>
       </select>
-      <select id="assigneeFilter" class="filter-select" onchange="renderBoard()">
+      <select id="assigneeFilter" class="filter-select" onchange="renderViews()">
         <option value="all">All Devs</option>
         <option value="unassigned">⚠️ Unassigned</option>
       </select>
     </div>
 
-    <!-- Board Columns -->
-    <div class="board-grid">
-      <!-- 1. Backlog -->
-      <div class="column col-backlog">
-        <div class="column-header">
-          <span class="col-title">📥 Backlog / Triage</span>
-          <span class="col-count" id="countBacklog">0</span>
+    <!-- Full-Width Row List View -->
+    <div id="listView" class="list-view-container">
+      <div class="list-rows-header">
+        <div class="list-chips-bar">
+          <button class="filter-chip active" id="chip_all" onclick="setListQuickFilter('all')">All (<span id="chipCount_all">0</span>)</button>
+          <button class="filter-chip" id="chip_backlog" onclick="setListQuickFilter('backlog')">📥 Backlog (<span id="chipCount_backlog">0</span>)</button>
+          <button class="filter-chip" id="chip_in_progress" onclick="setListQuickFilter('in_progress')">⚡ In Dev (<span id="chipCount_in_progress">0</span>)</button>
+          <button class="filter-chip" id="chip_testing" onclick="setListQuickFilter('testing')">🧪 Testing (<span id="chipCount_testing">0</span>)</button>
+          <button class="filter-chip" id="chip_done" onclick="setListQuickFilter('done')">✅ Done (<span id="chipCount_done">0</span>)</button>
+          <button class="filter-chip" id="chip_prod" onclick="setListQuickFilter('prod')">🚀 Production (<span id="chipCount_prod">0</span>)</button>
         </div>
-        <div class="card-list" id="listBacklog"></div>
-      </div>
-
-      <!-- 2. In Progress -->
-      <div class="column col-progress">
-        <div class="column-header">
-          <span class="col-title">⚡ In Development</span>
-          <span class="col-count" id="countProgress">0</span>
+        <div class="list-sort-info" style="color: #94a3b8; font-size: 0.775rem; display: flex; align-items: center; gap: 6px;">
+          <span id="listRowCount">Showing 0 issues</span>
+          <span class="scope-info-icon" title="💡 Scope Note: This board tracks issues raised via Telegram. Development team also has ongoing tasks for core modules and tester-reported bugs.">ⓘ</span>
+          <span>•</span>
+          <span>Sorted by recently updated</span>
         </div>
-        <div class="card-list" id="listProgress"></div>
       </div>
-
-      <!-- 3. Testing -->
-      <div class="column col-testing">
-        <div class="column-header">
-          <span class="col-title">🧪 Ready for Testing</span>
-          <span class="col-count" id="countTesting">0</span>
-        </div>
-        <div class="card-list" id="listTesting"></div>
-      </div>
-
-      <!-- 4. Done -->
-      <div class="column col-done">
-        <div class="column-header">
-          <span class="col-title">✅ Resolved / Done</span>
-          <span class="col-count" id="countDone">0</span>
-        </div>
-        <div class="card-list" id="listDone"></div>
-      </div>
+      <div id="listRowsList" class="list-rows-list"></div>
     </div>
   </div>
+
+  <div id="toast" class="toast">📋 Copied to clipboard!</div>
 
   <script>
     let rawIssues = [];
@@ -475,6 +891,13 @@
       if (hr > 0) return `${hr}h ago`;
       if (min > 0) return `${min}m ago`;
       return 'Just now';
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
     function escapeHtml(str) {
@@ -494,7 +917,7 @@
           return !s.includes('deleted') && !s.includes('invalid') && !s.includes('discard') && !s.includes('rejected');
         });
         updateFilters();
-        renderBoard();
+        renderViews();
         syncEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } catch (err) {
         syncEl.textContent = 'Sync error';
@@ -537,7 +960,42 @@
       });
     }
 
-    function renderBoard() {
+    let activeQuickFilter = 'all';
+
+    function setListQuickFilter(filterKey) {
+      activeQuickFilter = filterKey;
+      document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('chip_' + filterKey);
+      if (activeBtn) activeBtn.classList.add('active');
+      renderViews();
+    }
+
+    function copyKey(key, event) {
+      if (event) event.stopPropagation();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(key).then(() => {
+          showToast(`📋 Copied ${key} to clipboard`);
+        }).catch(() => {
+          showToast(`Copied ${key}`);
+        });
+      } else {
+        showToast(`Copied ${key}`);
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2200);
+    }
+
+    function renderViews() {
       const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const selRep = document.getElementById('reporterFilter').value;
       const selDev = document.getElementById('assigneeFilter').value;
@@ -558,70 +1016,170 @@
         return true;
       });
 
+      const isActuallyDone = i => {
+        const s = (i.status || '').toLowerCase();
+        return i.column === 'done' && !(s.includes('dev') && s.includes('done'));
+      };
+      const isActuallyDev = i => {
+        const s = (i.status || '').toLowerCase();
+        return i.column === 'in_progress' || i.column === 'dev_done' || (s.includes('dev') && s.includes('done'));
+      };
+
       const cols = { backlog: [], in_progress: [], testing: [], done: [] };
       filtered.forEach(i => {
-        if (cols[i.column]) cols[i.column].push(i);
-        else cols.backlog.push(i);
+        if (isActuallyDev(i)) {
+          cols.in_progress.push(i);
+        } else if (isActuallyDone(i)) {
+          cols.done.push(i);
+        } else if (cols[i.column]) {
+          cols[i.column].push(i);
+        } else {
+          cols.backlog.push(i);
+        }
       });
 
-      // Update counters
-      document.getElementById('statAll').textContent = rawIssues.length;
-      document.getElementById('statBacklog').textContent = rawIssues.filter(i => i.column === 'backlog').length;
-      document.getElementById('statProgress').textContent = rawIssues.filter(i => i.column === 'in_progress').length;
-      document.getElementById('statTesting').textContent = rawIssues.filter(i => i.column === 'testing').length;
-      document.getElementById('statDone').textContent = rawIssues.filter(i => i.column === 'done').length;
+      // Update Quick Filter Chip Counters
+      const chipAll = document.getElementById('chipCount_all');
+      const chipBacklog = document.getElementById('chipCount_backlog');
+      const chipProgress = document.getElementById('chipCount_in_progress');
+      const chipTesting = document.getElementById('chipCount_testing');
+      const chipDone = document.getElementById('chipCount_done');
+      const chipProd = document.getElementById('chipCount_prod');
 
-      document.getElementById('countBacklog').textContent = cols.backlog.length;
-      document.getElementById('countProgress').textContent = cols.in_progress.length;
-      document.getElementById('countTesting').textContent = cols.testing.length;
-      document.getElementById('countDone').textContent = cols.done.length;
+      if (chipAll) chipAll.textContent = filtered.length;
+      if (chipBacklog) chipBacklog.textContent = cols.backlog.length;
+      if (chipProgress) chipProgress.textContent = cols.in_progress.length;
+      if (chipTesting) chipTesting.textContent = cols.testing.length;
+      if (chipDone) chipDone.textContent = cols.done.length;
+      if (chipProd) chipProd.textContent = filtered.filter(i => (i.deployment || '').toLowerCase() === 'production').length;
 
-      renderColumn('listBacklog', cols.backlog, 'No backlog tasks');
-      renderColumn('listProgress', cols.in_progress, 'No tasks in progress');
-      renderColumn('listTesting', cols.testing, 'No tasks in testing');
-      renderColumn('listDone', cols.done, 'No resolved tasks');
+      // 2. Filter for List View by active quick chip
+      let listFiltered = filtered;
+      if (activeQuickFilter === 'backlog') {
+        listFiltered = cols.backlog;
+      } else if (activeQuickFilter === 'in_progress') {
+        listFiltered = filtered.filter(isActuallyDev);
+      } else if (activeQuickFilter === 'testing') {
+        listFiltered = cols.testing;
+      } else if (activeQuickFilter === 'done') {
+        listFiltered = filtered.filter(isActuallyDone);
+      } else if (activeQuickFilter === 'prod') {
+        listFiltered = filtered.filter(i => (i.deployment || '').toLowerCase() === 'production');
+      }
+
+      renderListView(listFiltered);
+    }
+    const renderBoard = renderViews;
+
+    function getDeploymentBadgeHtml(issue) {
+      const s = (issue.status || '').toLowerCase();
+      // 1. Dev Done / Development Done, Backlog, or In Progress -> Hide badge completely
+      if (issue.column === 'dev_done' || (s.includes('dev') && s.includes('done')) || issue.column === 'backlog' || issue.column === 'in_progress') {
+        return '';
+      }
+
+      // 2. If in Testing -> Available on: Staging only
+      if (issue.column === 'testing') {
+        return `
+          <div class="deploy-badge deploy-staging-only">
+            Available on: <strong>Staging only</strong>
+          </div>
+        `;
+      }
+
+      // 3. If Done
+      if (issue.column === 'done') {
+        const dep = (issue.deployment || '').toLowerCase();
+        if (dep.includes('production') || dep === 'prod') {
+          return `
+            <div class="deploy-badge deploy-production">
+              Available on: <strong>Production</strong>
+            </div>
+          `;
+        }
+        if (dep.includes('preprod')) {
+          return `
+            <div class="deploy-badge deploy-preprod">
+              Available on: <strong>Preprod</strong>
+            </div>
+          `;
+        }
+        return `
+          <div class="deploy-badge deploy-staging-only">
+            Available on: <strong>Staging only</strong>
+          </div>
+        `;
+      }
+
+      return '';
     }
 
-    function renderColumn(elementId, issues, emptyText) {
-      const container = document.getElementById(elementId);
+    function renderListView(issues) {
+      const container = document.getElementById('listRowsList');
+      const countEl = document.getElementById('listRowCount');
+      if (countEl) {
+        countEl.textContent = `Showing ${issues.length} issue${issues.length === 1 ? '' : 's'}`;
+      }
+
       if (issues.length === 0) {
-        container.innerHTML = `<div class="empty-state">${emptyText}</div>`;
+        container.innerHTML = '<div class="empty-state">No matching issues found for this filter.</div>';
         return;
       }
 
       container.innerHTML = issues.map(issue => {
+        const s = (issue.status || '').toLowerCase();
+        const isDevDone = issue.column === 'dev_done' || (s.includes('dev') && s.includes('done'));
+        const effectiveColumn = isDevDone ? 'dev_done' : issue.column;
+
         const isUnassigned = !issue.devAssignee || issue.devAssignee === 'Unassigned';
         const devFirstName = isUnassigned ? 'Unassigned' : issue.devAssignee.trim().split(/\s+/)[0];
+        const reporterFirstName = issue.reporter ? issue.reporter.trim().split(/\s+/)[0] : 'Unknown';
         const assigneeHtml = isUnassigned
           ? `<span class="unassigned-badge">⚠️ Unassigned</span>`
-          : `<span class="meta-text"><span class="meta-label">Assigned to:</span> ${escapeHtml(devFirstName)}</span>`;
+          : `<span class="meta-text"><span class="meta-label">Assigned to:</span> <strong title="${escapeHtml(issue.devAssignee || '')}">${escapeHtml(devFirstName)}</strong></span>`;
 
-        const deployment = issue.deployment || (issue.column === 'done' ? 'Not Released' : null);
-        let deployBadgeHtml = '';
-        if (deployment) {
-          const depClass = 'deploy-' + deployment.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-          deployBadgeHtml = `
-            <div class="deploy-badge ${depClass}">
-              Available on: <strong>${escapeHtml(deployment)}</strong>
-            </div>
-          `;
-        }
+        const deployBadgeHtml = getDeploymentBadgeHtml(issue);
+        const createdDate = issue.created ? `${formatDate(issue.created)} (${timeAgo(issue.created)})` : timeAgo(issue.updated);
 
         return `
-          <div class="task-card">
-            <div class="card-header">
-              <a href="${issue.jiraUrl}" target="_blank" class="jira-key">${issue.key} ↗</a>
-              <span class="jira-status">${escapeHtml(issue.status)}</span>
+          <div class="issue-row-card">
+            <!-- Left: Representation Color Column with Work ID -->
+            <div class="row-status-col status-col-${effectiveColumn}">
+              <a href="${issue.jiraUrl}" target="_blank" class="row-jira-key">${issue.key} ↗</a>
+              <span class="row-status-text">${escapeHtml(issue.status)}</span>
             </div>
-            <div class="card-title">${escapeHtml(issue.title)}</div>
-            ${deployBadgeHtml}
-            <div class="card-footer">
-              <div class="footer-row">
-                ${assigneeHtml}
-                <span class="time-text">${timeAgo(issue.updated)}</span>
+
+            <!-- Right: Pure White Body with Aligned Columns -->
+            <div class="row-body-col">
+              <!-- Top Row: Vertically Aligned Grid (Title | Reported By | Assigned To | Status) -->
+              <div class="row-top-grid">
+                <div class="col-title">${escapeHtml(issue.title)}</div>
+                <div class="col-meta-box">
+                  <span class="meta-label">Reported by:</span> <strong title="${escapeHtml(issue.reporter || '')}">${escapeHtml(reporterFirstName)}</strong>
+                </div>
+                <div class="col-meta-box">
+                  ${assigneeHtml}
+                </div>
+                <div class="col-status-box">
+                  <span class="status-pill status-${effectiveColumn}">
+                    <span class="dot-${effectiveColumn}"></span>
+                    ${escapeHtml(issue.status)}
+                  </span>
+                </div>
               </div>
-              <div class="footer-row">
-                <span class="reporter-text"><span class="reporter-label">Reported by:</span> ${escapeHtml(issue.reporter)}</span>
+
+              <!-- Bottom Sub-Row: Times (Left) & Deploy Badge (Right) -->
+              <div class="row-bottom-grid">
+                <div class="sub-left">
+                  <div class="sub-times">
+                    <span>Reported: <strong>${escapeHtml(createdDate)}</strong></span>
+                    <span>•</span>
+                    <span>Updated ${timeAgo(issue.updated)}</span>
+                  </div>
+                </div>
+                <div class="sub-right">
+                  ${deployBadgeHtml}
+                </div>
               </div>
             </div>
           </div>

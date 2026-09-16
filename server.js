@@ -10,8 +10,13 @@ app.use(express.json());
 
 // Helper: map Jira status into 4 simple columns
 function mapStatusToColumn(statusName, categoryName) {
-    const s = (statusName || '').toLowerCase();
-    const c = (categoryName || '').toLowerCase();
+    const s = (statusName || '').trim().toLowerCase();
+    const c = (categoryName || '').trim().toLowerCase();
+
+    // Development Done / Dev Done is before testing phase (not final resolved Done)
+    if ((s.includes('dev') && s.includes('done')) || s.includes('developer done')) {
+        return 'dev_done';
+    }
 
     if (s.includes('test') || s.includes('qa') || s.includes('review') || s.includes('verify')) {
         return 'testing';
@@ -257,6 +262,7 @@ app.get('/api/issues', async (req, res) => {
                 devAssignee: devFirstName,
                 priority: fields.priority?.name || 'Medium',
                 deployment: extractDeployment(fields, releaseFieldKeys),
+                created: fields.created,
                 updated: fields.updated,
                 jiraUrl: `https://${process.env.JIRA_DOMAIN}/browse/${issue.key}`
             };
@@ -285,6 +291,12 @@ app.get('/api/issues', async (req, res) => {
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Dedicated route for Kanban Board View
+app.get('/board', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'board.html'));
+});
+
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jira Kanban Board | Telegram Issues</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #ffffff;
+      --bg-surface: #ffffff;
+      --bg-column: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card-hover: #ffffff;
+      
+      --border-subtle: #e2e8f0;
+      --border-card: #e2e8f0;
+      --border-card-hover: #93c5fd;
+
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+
+      --color-backlog: #6366f1;
+      --color-progress: #0284c7;
+      --color-testing: #d97706;
+      --color-done: #16a34a;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .live-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #16a34a;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-nav-list {
+      background: #f1f5f9;
+      color: #334155;
+      text-decoration: none;
+      border: 1px solid #e2e8f0;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .btn-nav-list:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .btn-refresh {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: var(--shadow-sm);
+      transition: background 0.15s ease;
+    }
+    .btn-refresh:hover { background: #1d4ed8; }
+
+    /* Controls Bar */
+    .filters-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 14px 18px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .search-input {
+      flex: 1;
+      min-width: 240px;
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .search-input:focus { 
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .filter-select {
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-select:focus { border-color: #2563eb; }
+
+    /* Header Stats Pills */
+    .stats-pills {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stat-pill {
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.8rem;
+    }
+    .stat-pill .pill-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .stat-pill .pill-num {
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 0.875rem;
+    }
+    .stat-pill-backlog { border-left: 3px solid var(--color-backlog); }
+    .stat-pill-progress { border-left: 3px solid var(--color-progress); }
+    .stat-pill-testing { border-left: 3px solid var(--color-testing); }
+    .stat-pill-done { border-left: 3px solid var(--color-done); }
+
+    /* Board Columns Grid */
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: flex-start;
+    }
+    @media (max-width: 1150px) {
+      .board-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 650px) {
+      .board-grid { grid-template-columns: 1fr; }
+    }
+
+    .column {
+      background: var(--bg-column);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-sm);
+    }
+    .column-header {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-radius: 10px 10px 0 0;
+    }
+    .col-title {
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .col-count {
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #e2e8f0;
+      padding: 3px 9px;
+      border-radius: 99px;
+      color: #334155;
+    }
+
+    .col-backlog { border-top: 3px solid var(--color-backlog); }
+    .col-progress { border-top: 3px solid var(--color-progress); }
+    .col-testing { border-top: 3px solid var(--color-testing); }
+    .col-done { border-top: 3px solid var(--color-done); }
+
+    .card-list {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      min-height: 140px;
+    }
+
+    /* Cards */
+    .task-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .task-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-card-hover);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .jira-key {
+      font-size: 0.775rem;
+      font-weight: 700;
+      color: #0284c7;
+      text-decoration: none;
+      background: #f0f9ff;
+      border: 1px solid #e0f2fe;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .jira-key:hover { text-decoration: underline; background: #e0f2fe; }
+    .jira-status {
+      font-size: 0.725rem;
+      font-weight: 600;
+      color: #475569;
+      background: #f1f5f9;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .card-title {
+      font-size: 0.885rem;
+      color: #0f172a;
+      line-height: 1.4;
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    .deploy-badge {
+      font-size: 0.725rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      width: fit-content;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+    .deploy-production {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    .deploy-preprod {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .deploy-staging {
+      background: #f5f3ff;
+      color: #6d28d9;
+      border: 1px solid #ddd6fe;
+    }
+    .deploy-staging-only {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .deploy-not-released {
+      background: #f0f9ff;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+
+    .card-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 0.775rem;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .meta-text, .reporter-text {
+      color: #334155;
+      font-weight: 500;
+      font-size: 0.75rem;
+    }
+    .meta-label, .reporter-label {
+      color: #64748b;
+      font-weight: 400;
+    }
+    .unassigned-badge {
+      background: #fff1f2;
+      color: #e11d48;
+      border: 1px solid #ffe4e6;
+      font-weight: 600;
+      font-size: 0.725rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .time-text {
+      color: #94a3b8;
+      font-size: 0.725rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 36px 12px;
+      color: #94a3b8;
+      font-size: 0.825rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="top-bar">
+      <div class="brand-title">
+        <span>📲 Jira Telegram Kanban Board</span>
+        <span class="live-tag">● Live</span>
+      </div>
+
+      <!-- Quick Stats in Title Row -->
+      <div class="stats-pills">
+        <div class="stat-pill">
+          <span class="pill-label">Total</span>
+          <span class="pill-num" id="statAll">0</span>
+        </div>
+        <div class="stat-pill stat-pill-backlog">
+          <span class="pill-label">📥 Backlog</span>
+          <span class="pill-num" id="statBacklog">0</span>
+        </div>
+        <div class="stat-pill stat-pill-progress">
+          <span class="pill-label">⚡ In Progress</span>
+          <span class="pill-num" id="statProgress">0</span>
+        </div>
+        <div class="stat-pill stat-pill-testing">
+          <span class="pill-label">🧪 In Testing</span>
+          <span class="pill-num" id="statTesting">0</span>
+        </div>
+        <div class="stat-pill stat-pill-done">
+          <span class="pill-label">✅ Done</span>
+          <span class="pill-num" id="statDone">0</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <a href="/" class="btn-nav-list" title="View in List Format">☰ List View</a>
+        <span id="syncTime" style="font-size:0.8rem; color:var(--text-dim);">Syncing...</span>
+        <button id="refreshBtn" class="btn-refresh" onclick="loadIssues()">🔄 Refresh</button>
+      </div>
+    </header>
+
+    <!-- Controls -->
+    <div class="filters-bar">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search by title, ID (e.g. WD-1384), or name..." oninput="renderViews()">
+      <select id="reporterFilter" class="filter-select" onchange="renderViews()">
+        <option value="all">All Reporters</option>
+      </select>
+      <select id="assigneeFilter" class="filter-select" onchange="renderViews()">
+        <option value="all">All Devs</option>
+        <option value="unassigned">⚠️ Unassigned</option>
+      </select>
+    </div>
+
+    <!-- Board Columns -->
+    <div class="board-grid" id="boardGrid">
+      <!-- 1. Backlog -->
+      <div class="column col-backlog">
+        <div class="column-header">
+          <span class="col-title">📥 Backlog / Triage</span>
+          <span class="col-count" id="countBacklog">0</span>
+        </div>
+        <div class="card-list" id="listBacklog"></div>
+      </div>
+
+      <!-- 2. In Progress -->
+      <div class="column col-progress">
+        <div class="column-header">
+          <span class="col-title">⚡ In Development</span>
+          <span class="col-count" id="countProgress">0</span>
+        </div>
+        <div class="card-list" id="listProgress"></div>
+      </div>
+
+      <!-- 3. Testing -->
+      <div class="column col-testing">
+        <div class="column-header">
+          <span class="col-title">🧪 Ready for Testing</span>
+          <span class="col-count" id="countTesting">0</span>
+        </div>
+        <div class="card-list" id="listTesting"></div>
+      </div>
+
+      <!-- 4. Done -->
+      <div class="column col-done">
+        <div class="column-header">
+          <span class="col-title">✅ Resolved / Done</span>
+          <span class="col-count" id="countDone">0</span>
+        </div>
+        <div class="card-list" id="listDone"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let rawIssues = [];
+
+    function timeAgo(dateString) {
+      if (!dateString) return '';
+      const sec = Math.floor((new Date() - new Date(dateString)) / 1000);
+      const min = Math.floor(sec / 60);
+      const hr = Math.floor(min / 60);
+      const day = Math.floor(hr / 24);
+      if (day > 1) return `${day}d ago`;
+      if (day === 1) return 'Yesterday';
+      if (hr > 0) return `${hr}h ago`;
+      if (min > 0) return `${min}m ago`;
+      return 'Just now';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    async function loadIssues() {
+      const syncEl = document.getElementById('syncTime');
+      syncEl.textContent = 'Updating...';
+
+      try {
+        const res = await fetch('/api/issues');
+        const data = await res.json();
+        rawIssues = (data.issues || []).filter(issue => {
+          const s = (issue.status || '').toLowerCase();
+          return !s.includes('deleted') && !s.includes('invalid') && !s.includes('discard') && !s.includes('rejected');
+        });
+        updateFilters();
+        renderViews();
+        syncEl.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (err) {
+        syncEl.textContent = 'Sync error';
+        console.error(err);
+      }
+    }
+
+    function updateFilters() {
+      const repSelect = document.getElementById('reporterFilter');
+      const devSelect = document.getElementById('assigneeFilter');
+
+      const currentRep = repSelect.value;
+      const currentDev = devSelect.value;
+
+      const reporters = new Set();
+      const devs = new Set();
+
+      rawIssues.forEach(i => {
+        if (i.reporter) reporters.add(i.reporter);
+        if (i.devAssignee && i.devAssignee !== 'Unassigned') devs.add(i.devAssignee);
+      });
+
+      repSelect.innerHTML = '<option value="all">All Reporters</option>';
+      Array.from(reporters).sort().forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = `👤 ${r}`;
+        if (r === currentRep) opt.selected = true;
+        repSelect.appendChild(opt);
+      });
+
+      devSelect.innerHTML = '<option value="all">All Devs</option><option value="unassigned">⚠️ Unassigned</option>';
+      if (currentDev === 'unassigned') devSelect.value = 'unassigned';
+      Array.from(devs).sort().forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = `👨‍💻 ${d}`;
+        if (d === currentDev) opt.selected = true;
+        devSelect.appendChild(opt);
+      });
+    }
+
+    function renderViews() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const selRep = document.getElementById('reporterFilter').value;
+      const selDev = document.getElementById('assigneeFilter').value;
+
+      const filtered = rawIssues.filter(issue => {
+        if (query) {
+          const matchKey = issue.key.toLowerCase().includes(query);
+          const matchTitle = (issue.title || '').toLowerCase().includes(query);
+          const matchRep = (issue.reporter || '').toLowerCase().includes(query);
+          const matchDev = (issue.devAssignee || '').toLowerCase().includes(query);
+          if (!matchKey && !matchTitle && !matchRep && !matchDev) return false;
+        }
+
+        if (selRep !== 'all' && issue.reporter !== selRep) return false;
+
+        if (selDev === 'unassigned') {
+          if (issue.devAssignee && issue.devAssignee !== 'Unassigned') return false;
+        } else if (selDev !== 'all' && issue.devAssignee !== selDev) {
+          return false;
+        }
+
+        return true;
+      });
+
+      const isActuallyDone = (i) => {
+        const s = (i.status || '').toLowerCase();
+        return i.column === 'done' && !(s.includes('dev') && s.includes('done'));
+      };
+
+      const isActuallyDev = (i) => {
+        const s = (i.status || '').toLowerCase();
+        return i.column === 'in_progress' || i.column === 'dev_done' || (s.includes('dev') && s.includes('done'));
+      };
+
+      const cols = { backlog: [], in_progress: [], testing: [], done: [] };
+      filtered.forEach(i => {
+        if (isActuallyDev(i)) {
+          cols.in_progress.push(i);
+        } else if (isActuallyDone(i)) {
+          cols.done.push(i);
+        } else if (cols[i.column]) {
+          cols[i.column].push(i);
+        } else {
+          cols.backlog.push(i);
+        }
+      });
+
+      // Update Top Stats
+      document.getElementById('statAll').textContent = rawIssues.length;
+      document.getElementById('statBacklog').textContent = rawIssues.filter(i => i.column === 'backlog').length;
+      document.getElementById('statProgress').textContent = rawIssues.filter(isActuallyDev).length;
+      document.getElementById('statTesting').textContent = rawIssues.filter(i => i.column === 'testing').length;
+      document.getElementById('statDone').textContent = rawIssues.filter(isActuallyDone).length;
+
+      // Update Column Counters
+      document.getElementById('countBacklog').textContent = cols.backlog.length;
+      document.getElementById('countProgress').textContent = cols.in_progress.length;
+      document.getElementById('countTesting').textContent = cols.testing.length;
+      document.getElementById('countDone').textContent = cols.done.length;
+
+      renderColumn('listBacklog', cols.backlog, 'No backlog tasks');
+      renderColumn('listProgress', cols.in_progress, 'No tasks in progress');
+      renderColumn('listTesting', cols.testing, 'No tasks in testing');
+      renderColumn('listDone', cols.done, 'No resolved tasks');
+    }
+
+    function getDeploymentBadgeHtml(issue) {
+      const s = (issue.status || '').toLowerCase();
+
+      // 1. Dev Done or To Do or In Progress: Do NOT show availability badge
+      if (issue.column === 'backlog' || issue.column === 'in_progress' || issue.column === 'dev_done' || (s.includes('dev') && s.includes('done'))) {
+        return '';
+      }
+
+      // 2. In Testing: Available on: Staging only
+      if (issue.column === 'testing') {
+        return `
+          <div class="deploy-badge deploy-staging-only">
+            Available on: <strong>Staging only</strong>
+          </div>
+        `;
+      }
+
+      // 3. If Done
+      if (issue.column === 'done') {
+        const dep = (issue.deployment || '').toLowerCase();
+        if (dep.includes('production') || dep === 'prod') {
+          return `
+            <div class="deploy-badge deploy-production">
+              Available on: <strong>Production</strong>
+            </div>
+          `;
+        }
+        if (dep.includes('preprod')) {
+          return `
+            <div class="deploy-badge deploy-preprod">
+              Available on: <strong>Preprod</strong>
+            </div>
+          `;
+        }
+        return `
+          <div class="deploy-badge deploy-staging-only">
+            Available on: <strong>Staging only</strong>
+          </div>
+        `;
+      }
+
+      return '';
+    }
+
+    function renderColumn(elementId, issues, emptyText) {
+      const container = document.getElementById(elementId);
+      if (issues.length === 0) {
+        container.innerHTML = `<div class="empty-state">${emptyText}</div>`;
+        return;
+      }
+
+      container.innerHTML = issues.map(issue => {
+        const isUnassigned = !issue.devAssignee || issue.devAssignee === 'Unassigned';
+        const devFirstName = isUnassigned ? 'Unassigned' : issue.devAssignee.trim().split(/\s+/)[0];
+        const reporterFirstName = issue.reporter ? issue.reporter.trim().split(/\s+/)[0] : 'Unknown';
+        const assigneeHtml = isUnassigned
+          ? `<span class="unassigned-badge">⚠️ Unassigned</span>`
+          : `<span class="meta-text"><span class="meta-label">Assigned to:</span> <strong title="${escapeHtml(issue.devAssignee || '')}">${escapeHtml(devFirstName)}</strong></span>`;
+
+        const deployBadgeHtml = getDeploymentBadgeHtml(issue);
+
+        return `
+          <div class="task-card">
+            <div class="card-header">
+              <a href="${issue.jiraUrl}" target="_blank" class="jira-key">${issue.key} ↗</a>
+              <span class="jira-status">${escapeHtml(issue.status)}</span>
+            </div>
+            <div class="card-title">${escapeHtml(issue.title)}</div>
+            ${deployBadgeHtml}
+            <div class="card-footer">
+              <div class="footer-row">
+                ${assigneeHtml}
+                <span class="time-text">${timeAgo(issue.updated)}</span>
+              </div>
+              <div class="footer-row">
+                <span class="reporter-text"><span class="reporter-label">Reported by:</span> <strong title="${escapeHtml(issue.reporter || '')}">${escapeHtml(reporterFirstName)}</strong></span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadIssues, 30000);
+
+    // Initial load
+    loadIssues();
+  </script>
+</body>
+</html>
