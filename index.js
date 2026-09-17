@@ -177,7 +177,7 @@ function buildResolutionCardSvg(issue) {
     const line1 = escapeXml(titleLines[0] || 'Task Completed');
     const line2 = escapeXml(titleLines[1] || '');
     const availability = escapeXml(issue.availability || 'Staging only');
-    const reporter = escapeXml(issue.reporter || 'Unknown');
+    const reporter = escapeXml((issue.reporter || 'Unknown').trim().split(/\s+/)[0]);
     const assignee = escapeXml(issue.devAssignee || 'Unassigned');
 
     const width = 840;
@@ -328,7 +328,7 @@ async function sendCompletionNotification(issue) {
     }
 
     const titleClean = escapeHtml((issue.title || '').replace(/^[📲\s]+/, '').trim());
-    const reporter = escapeHtml(issue.reporter || 'Unknown');
+    const reporter = escapeXml((issue.reporter || 'Unknown').trim().split(/\s+/)[0]);
     const assignee = escapeHtml(issue.devAssignee || 'Unassigned');
     const availability = escapeHtml(issue.availability || 'Staging only');
 
